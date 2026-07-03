@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yourcompany.reception.mapper.InstitutionMapper">
+
+    <select id="selectAll" resultType="com.yourcompany.reception.entity.Institution">
+        SELECT * FROM institution_info ORDER BY create_time DESC
+    </select>
+
+    <insert id="insert" parameterType="com.yourcompany.reception.entity.Institution">
+        INSERT INTO institution_info (inst_name, inst_desc, create_time)
+        VALUES (#{inst_name}, #{inst_desc}, NOW())
+    </insert>
+
+    <update id="update" parameterType="com.yourcompany.reception.entity.Institution">
+        UPDATE institution_info
+        SET inst_name = #{inst_name}, inst_desc = #{inst_desc}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM institution_info WHERE id = #{id}
+    </delete>
+
+</mapper>

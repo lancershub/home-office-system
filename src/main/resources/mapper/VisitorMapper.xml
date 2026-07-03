@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yourcompany.reception.mapper.VisitorMapper">
+
+    <select id="selectAllVisitors" resultType="map">
+        SELECT
+        v.id,
+        v.visitor_name,
+        v.dept_id,
+        d.dept_name
+        FROM visitor_record v
+        LEFT JOIN department_info d ON v.dept_id = d.id
+        ORDER BY v.id ASC
+    </select>
+
+    <update id="updateDept">
+        UPDATE visitor_record
+        SET dept_id = #{deptId}
+        WHERE id = #{userId}
+    </update>
+
+</mapper>
