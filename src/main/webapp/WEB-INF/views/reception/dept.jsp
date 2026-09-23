@@ -3,10 +3,11 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+<%@ include file="security.jspf" %>
     <meta charset="UTF-8">
     <title>部门管理</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link href="${pageContext.request.contextPath}/lib/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/lib/bootstrap-icons/font/bootstrap-icons.css">
 
     <style>
         body { background-color: #f8f9fa; padding: 20px; }
@@ -55,6 +56,7 @@
             </div>
             <div class="modal-body p-4">
                 <form id="deptForm">
+<input type="hidden" name="${_csrf.parameterName}" value="<c:out value='${_csrf.token}'/>">
                     <input type="hidden" id="dept_id" name="id">
 
                     <div class="mb-3">
@@ -85,130 +87,9 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="${pageContext.request.contextPath}/lib/jquery/jquery.min.js"></script>
+<script src="${pageContext.request.contextPath}/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
 
-<script>
-    const ctx = "${pageContext.request.contextPath}";
-    const deptModal = new bootstrap.Modal(document.getElementById('deptModal'));
-
-    // 机构数据：由服务端注入
-    const instData = [
-        <c:forEach items="${institutions}" var="inst" varStatus="s">
-            {id: ${inst.id}, inst_name: '${inst.inst_name}'}${s.last ? '' : ','}
-        </c:forEach>
-    ];
-
-    // 填充机构下拉框
-    function buildInstOptions(selectedId) {
-        var html = '<option value="">-- 暂不归属任何机构 --</option>';
-        instData.forEach(function(inst) {
-            var sel = (inst.id === selectedId) ? ' selected' : '';
-            html += '<option value="' + inst.id + '"' + sel + '>' + inst.inst_name + '</option>';
-        });
-        $("#inst_id").html(html);
-    }
-
-    // 根据 inst_id 获取机构名
-    function getInstName(instId) {
-        var found = instData.find(function(inst) { return inst.id === instId; });
-        return found ? found.inst_name : '<span class="text-muted">未归属</span>';
-    }
-
-    $(document).ready(function() {
-        buildInstOptions();
-        loadDeptData();
-    });
-
-    function loadDeptData() {
-        $.ajax({
-            url: ctx + '/dept/list',
-            type: 'GET',
-            dataType: 'json',
-            success: function(res) {
-                var html = '';
-                if(res.length === 0) {
-                    html = '<tr><td colspan="6" class="text-muted py-4">暂无部门数据，请点击右上角添加</td></tr>';
-                } else {
-                    res.forEach(function(dept) {
-                        var dateStr = dept.create_time ? new Date(dept.create_time).toLocaleString() : '-';
-                        var deptJson = encodeURIComponent(JSON.stringify(dept));
-
-                        html += '<tr>' +
-                            '<td><span class="badge bg-secondary"># ' + dept.id + '</span></td>' +
-                            '<td class="fw-bold text-dark">' + dept.dept_name + '</td>' +
-                            '<td>' + getInstName(dept.inst_id) + '</td>' +
-                            '<td class="text-start text-muted">' + (dept.dept_desc || '<span class="text-light">暂无描述</span>') + '</td>' +
-                            '<td>' + dateStr + '</td>' +
-                            '<td>' +
-                                '<button class="btn btn-outline-primary action-btn me-1" onclick="showEditModal(\'' + deptJson + '\')"><i class="bi bi-pencil-square"></i></button>' +
-                                '<button class="btn btn-outline-danger action-btn" onclick="deleteDept(' + dept.id + ', \'' + dept.dept_name + '\')"><i class="bi bi-trash"></i></button>' +
-                            '</td>' +
-                            '</tr>';
-                    });
-                }
-                $("#deptTableBody").html(html);
-            },
-            error: function() {
-                $("#deptTableBody").html('<tr><td colspan="6" class="text-danger py-4">数据加载失败，请检查服务器连接</td></tr>');
-            }
-        });
-    }
-
-    function showAddModal() {
-        $("#deptForm")[0].reset();
-        $("#dept_id").val('');
-        buildInstOptions();
-        $("#modalTitle").text("新增部门");
-        deptModal.show();
-    }
-
-    function showEditModal(deptJsonStr) {
-        var dept = JSON.parse(decodeURIComponent(deptJsonStr));
-        $("#dept_id").val(dept.id);
-        $("#dept_name").val(dept.dept_name);
-        $("#dept_desc").val(dept.dept_desc);
-        $("#manager_id").val(dept.manager_id);
-        buildInstOptions(dept.inst_id);
-        $("#modalTitle").text("编辑部门 - " + dept.dept_name);
-        deptModal.show();
-    }
-
-    function saveDept() {
-        var name = $("#dept_name").val().trim();
-        if(!name) return alert("部门名称不能为空！");
-
-        $.ajax({
-            url: ctx + '/dept/save',
-            type: 'POST',
-            data: $("#deptForm").serialize(),
-            success: function(res) {
-                if(res === 'success') {
-                    deptModal.hide();
-                    loadDeptData();
-                } else {
-                    alert("保存失败，请重试！");
-                }
-            }
-        });
-    }
-
-    function deleteDept(id, name) {
-        if(confirm('确定要删除【' + name + '】吗？此操作不可恢复！')) {
-            $.ajax({
-                url: ctx + '/dept/delete',
-                type: 'POST',
-                data: { id: id },
-                success: function(res) {
-                    if(res === 'success') {
-                        loadDeptData();
-                    } else {
-                        alert("删除失败！");
-                    }
-                }
-            });
-        }
-    }
-</script>
+<script src="${pageContext.request.contextPath}/js/dept.js"></script>
 </body>
 </html>

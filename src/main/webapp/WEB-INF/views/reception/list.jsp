@@ -3,11 +3,12 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+<%@ include file="security.jspf" %>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>访客数据记录</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link href="${pageContext.request.contextPath}/lib/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/lib/bootstrap-icons/font/bootstrap-icons.css">
 </head>
 <body>
 
@@ -36,22 +37,19 @@
                     <tr>
                         <th scope="row">${v.id}</th>
 
-                        <td>${v.visitor_name}</td>
-                        <td>${v.phone}</td>
-                        <td>${v.purpose}</td>
+                        <td><c:out value="${v.visitor_name}"/></td>
+                        <td><c:out value="${v.phone}"/></td>
+                        <td><c:out value="${v.purpose}"/></td>
                         <td>
                             <span class="text-muted">******</span>
                         </td>
 
                         <td class="text-center">
-                            <button class="btn btn-primary btn-sm"
-                                    onclick="openEditModal('${v.id}', '${v.visitor_name}', '${v.phone}', '${v.purpose}')">
+                            <button class="btn btn-primary btn-sm edit-visitor" data-id="${v.id}" data-name="<c:out value='${v.visitor_name}'/>" data-phone="<c:out value='${v.phone}'/>" data-purpose="<c:out value='${v.purpose}'/>">
                                 <i class="bi bi-pencil-square"></i> 编辑
                             </button>
-                            <a href="deleteVisitor?id=${v.id}" class="btn btn-danger btn-sm"
-                               onclick="return confirm('确定要删除访客 [${v.visitor_name}] 吗？');">
-                                <i class="bi bi-trash"></i> 删除
-                            </a>
+                            <form action="deleteVisitor" method="post" style="display:inline" onsubmit="return confirm('确定删除该员工？')">
+<input type="hidden" name="${_csrf.parameterName}" value="<c:out value='${_csrf.token}'/>"><input type="hidden" name="id" value="${v.id}"><button class="btn btn-danger btn-sm" type="submit">删除</button></form>
                         </td>
                     </tr>
                 </c:forEach>
@@ -76,6 +74,7 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form action="addVisitor" method="post">
+<input type="hidden" name="${_csrf.parameterName}" value="<c:out value='${_csrf.token}'/>"><div class="p-3"><label>初始密码（至少12字符）</label><input type="password" name="password" class="form-control" minlength="12" required autocomplete="new-password"></div>
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">访客姓名 <span class="text-danger">*</span></label>
@@ -107,6 +106,7 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form action="updateVisitor" method="post">
+<input type="hidden" name="${_csrf.parameterName}" value="<c:out value='${_csrf.token}'/>">
                 <div class="modal-body">
                     <input type="hidden" name="id" id="edit-id">
                     <div class="mb-3">
@@ -131,8 +131,9 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="${pageContext.request.contextPath}/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script>
+document.querySelectorAll(".edit-visitor").forEach(function(button){button.addEventListener("click",function(){openEditModal(this.dataset.id,this.dataset.name,this.dataset.phone,this.dataset.purpose);});});
     // JS 逻辑：点击“编辑”按钮时，将当前行的数据填充到模态框中
     function openEditModal(id, name, phone, purpose) {
         document.getElementById('edit-id').value = id;

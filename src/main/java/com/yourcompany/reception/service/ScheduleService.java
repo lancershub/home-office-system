@@ -25,6 +25,11 @@ public class ScheduleService {
     }
 
     public int save(Schedule s) {
+        com.yourcompany.reception.util.Input.text(s.getTitle(), "标题", 200, true);
+        com.yourcompany.reception.util.Input.text(s.getContent(), "内容", 2000, false);
+        String date = com.yourcompany.reception.util.Input.text(s.getSchedule_date(), "日期", 10, true);
+        try { java.time.LocalDate.parse(date); }
+        catch (java.time.format.DateTimeParseException ex) { throw new IllegalArgumentException("日期格式应为 YYYY-MM-DD"); }
         String sql = "INSERT INTO schedule_record (user_id, title, content, schedule_date, status) VALUES (?, ?, ?, ?, 0)";
         return jdbcTemplate.update(sql, s.getUser_id(), s.getTitle(), s.getContent(), s.getSchedule_date());
     }

@@ -14,7 +14,9 @@
         http://www.springframework.org/schema/task
         http://www.springframework.org/schema/task/spring-task.xsd">
 
-    <context:property-placeholder location="classpath:jdbc.properties"/>
+    <context:property-placeholder
+        location="classpath:jdbc.properties,file:${office.config:${user.dir}/office-local.properties}"
+        ignore-resource-not-found="true"/>
 
     <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource" init-method="init" destroy-method="close">
         <property name="driverClassName" value="${jdbc.driver}"/>
@@ -29,6 +31,8 @@
 
     <context:component-scan base-package="com.yourcompany.reception.service"/>
     <context:component-scan base-package="com.yourcompany.reception.util"/>
+    <context:component-scan base-package="com.yourcompany.reception.security"/>
+    <bean class="com.yourcompany.reception.websocket.NativeChatServer" autowire="constructor"/>
 
     <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
         <property name="dataSource" ref="dataSource"/>

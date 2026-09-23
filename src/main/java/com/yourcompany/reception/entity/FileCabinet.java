@@ -3,6 +3,9 @@ package com.yourcompany.reception.entity;
 import java.util.Date;
 
 public class FileCabinet {
+    private String storage_status;
+    public String getStorage_status() { return storage_status; }
+    public void setStorage_status(String value) { storage_status = value; }
     private Integer id;
     private Integer user_id;
     private String file_name;

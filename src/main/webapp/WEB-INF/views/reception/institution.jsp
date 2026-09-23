@@ -2,10 +2,11 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+<%@ include file="security.jspf" %>
     <meta charset="UTF-8">
     <title>机构管理</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link href="${pageContext.request.contextPath}/lib/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/lib/bootstrap-icons/font/bootstrap-icons.css">
     <style>
         body { background-color: #f8f9fa; padding: 20px; }
         .card { border-radius: 12px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
@@ -48,6 +49,7 @@
             </div>
             <div class="modal-body">
                 <form id="instForm">
+<input type="hidden" name="${_csrf.parameterName}" value="<c:out value='${_csrf.token}'/>">
                     <input type="hidden" id="inst_id" name="id">
                     <div class="mb-3">
                         <label class="form-label">机构名称</label>
@@ -66,69 +68,8 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    const ctx = "${pageContext.request.contextPath}";
-    const instModal = new bootstrap.Modal(document.getElementById('instModal'));
-
-    $(document).ready(loadInstData);
-
-    function loadInstData() {
-        $.get(ctx + '/inst/list', function(res) {
-            let data = typeof res === 'string' ? JSON.parse(res) : res;
-            let html = '';
-            data.forEach(item => {
-                let dateStr = item.create_time ? new Date(item.create_time).toLocaleDateString() : '-';
-                let json = encodeURIComponent(JSON.stringify(item));
-                html += `
-                    <tr>
-                        <td>\${item.id}</td>
-                        <td class="fw-bold">\${item.inst_name}</td>
-                        <td>\${item.inst_desc || '-'}</td>
-                        <td>\${dateStr}</td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-primary" onclick="showEditModal('\${json}')">编辑</button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="deleteInst(\${item.id})">删除</button>
-                        </td>
-                    </tr>`;
-            });
-            $("#instTableBody").html(html);
-        });
-    }
-
-    function showAddModal() {
-        $("#instForm")[0].reset();
-        $("#inst_id").val('');
-        $("#modalTitle").text("新增机构");
-        instModal.show();
-    }
-
-    function showEditModal(json) {
-        let item = JSON.parse(decodeURIComponent(json));
-        $("#inst_id").val(item.id);
-        $("#inst_name").val(item.inst_name);
-        $("#inst_desc").val(item.inst_desc);
-        $("#modalTitle").text("编辑机构");
-        instModal.show();
-    }
-
-    function saveInst() {
-        $.post(ctx + '/inst/save', $("#instForm").serialize(), function(res) {
-            if(res === 'success') {
-                instModal.hide();
-                loadInstData();
-            }
-        });
-    }
-
-    function deleteInst(id) {
-        if(confirm("确定删除吗？")) {
-            $.post(ctx + '/inst/delete', {id: id}, function(res) {
-                if(res === 'success') loadInstData();
-            });
-        }
-    }
-</script>
+<script src="${pageContext.request.contextPath}/lib/jquery/jquery.min.js"></script>
+<script src="${pageContext.request.contextPath}/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="${pageContext.request.contextPath}/js/institution.js"></script>
 </body>
 </html>

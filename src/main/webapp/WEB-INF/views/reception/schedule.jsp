@@ -2,10 +2,11 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+<%@ include file="security.jspf" %>
     <meta charset="UTF-8">
     <title>我的日程管理</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link href="${pageContext.request.contextPath}/lib/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/lib/bootstrap-icons/font/bootstrap-icons.css">
 
     <style>
         body { background-color: #f8f9fa; padding: 15px; }
@@ -44,6 +45,7 @@
             </div>
             <div class="modal-body p-4">
                 <form id="scheduleForm">
+<input type="hidden" name="${_csrf.parameterName}" value="<c:out value='${_csrf.token}'/>">
                     <div class="mb-3">
                         <label class="form-label fw-bold">选定日期</label>
                         <input type="text" class="form-control bg-light" id="schedule_date" name="schedule_date" readonly>
@@ -66,12 +68,12 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="${pageContext.request.contextPath}/lib/jquery/jquery.min.js"></script>
+<script src="${pageContext.request.contextPath}/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
 <!-- FullCalendar v5 稳定版，兼容性好 -->
-<link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.5/main.min.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.5/main.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.5/locales/zh-cn.js"></script>
+<link href="${pageContext.request.contextPath}/lib/fullcalendar/main.min.css" rel="stylesheet">
+<script src="${pageContext.request.contextPath}/lib/fullcalendar/main.min.js"></script>
+<script src="${pageContext.request.contextPath}/lib/fullcalendar/locales/zh-cn.js"></script>
 
 <script>
     var ctx = "${pageContext.request.contextPath}";

@@ -5,6 +5,8 @@ import com.yourcompany.reception.service.ScheduleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpSession;
@@ -19,7 +21,7 @@ public class ScheduleController {
     private ScheduleService scheduleService;
 
     // 跳转到日历页面
-    @RequestMapping("/view")
+    @GetMapping("/view")
     public String viewPage(HttpSession session) {
         // 【修改点1】暗号改成 visitorId
         if (session.getAttribute("visitorId") == null) {
@@ -28,7 +30,7 @@ public class ScheduleController {
         return "schedule";
     }
 
-    @RequestMapping("/data")
+    @GetMapping("/data")
     @ResponseBody
     public List<Schedule> getJsonData(HttpSession session) {
         // 【修改点2】暗号改成 visitorId
@@ -37,7 +39,7 @@ public class ScheduleController {
         return scheduleService.getAllSchedules(userId);
     }
 
-    @RequestMapping("/add")
+    @PostMapping("/add")
     @ResponseBody
     public String add(Schedule schedule, HttpSession session) {
         // 【修改点3】暗号改成 visitorId
@@ -47,7 +49,7 @@ public class ScheduleController {
         return scheduleService.save(schedule) > 0 ? "success" : "fail";
     }
 
-    @RequestMapping("/delete")
+    @PostMapping("/delete")
     @ResponseBody
     public String delete(Integer id, HttpSession session) {
         // 【修改点4】暗号改成 visitorId

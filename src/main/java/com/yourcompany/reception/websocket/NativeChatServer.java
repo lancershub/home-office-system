@@ -1,105 +1,92 @@
 package com.yourcompany.reception.websocket;
-
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.*;
 import com.yourcompany.reception.service.ChatMessageService;
-
-import javax.websocket.*;
-import javax.websocket.server.PathParam;
-import javax.websocket.server.ServerEndpoint;
-import java.io.IOException;
+import org.springframework.stereotype.Component;
+import org.springframework.context.event.EventListener;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.web.session.HttpSessionDestroyedEvent;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.web.socket.*;
+import org.springframework.web.socket.handler.*;
+import org.springframework.scheduling.annotation.Scheduled;
+import javax.servlet.http.HttpSession;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.io.IOException;
+import java.util.logging.*;
 
-// 【核心魔法】：直接使用 {userId} 作为路径变量，Tomcat 会自动提取它！
-@ServerEndpoint("/native/chat/{userId}")
-public class NativeChatServer {
-
-    // 依然使用线程安全的 Map 存储在线人员的 Session
-    private static final ConcurrentHashMap<String, Session> onlineUsers = new ConcurrentHashMap<>();
-
-    // 记录当前这根电话线属于谁
-    private String myUserId;
-
-    /**
-     * 1. 连接建立时触发
-     * @PathParam("userId") 直接就把前端 URL 里的 ID 抓出来了！极其优雅！
-     */
-    @OnOpen
-    public void onOpen(Session session, @PathParam("userId") String userId) {
-        this.myUserId = userId;
-        onlineUsers.put(userId, session);
-        System.out.println("【原生 WebSocket】门卫放行，用户上线：" + userId + "，当前总人数：" + onlineUsers.size());
+public class NativeChatServer extends TextWebSocketHandler {
+    private static final Logger LOG = Logger.getLogger(NativeChatServer.class.getName());
+    private final ChatMessageService messages;
+    private final ObjectMapper json = new ObjectMapper();
+    // Key by connection ID so old closes cannot remove a new connection, and multiple tabs work.
+    private final Map<String, WebSocketSession> connections = new ConcurrentHashMap<>();
+    public NativeChatServer(ChatMessageService messages) { this.messages = messages; }
+    @Override public void afterConnectionEstablished(WebSocketSession session) throws Exception {
+        if (!valid(session)) { session.close(CloseStatus.POLICY_VIOLATION); return; }
+        session.setTextMessageSizeLimit(16384);
+        connections.put(session.getId(), new ConcurrentWebSocketSessionDecorator(session, 5000, 65536));
     }
-
-    /**
-     * 2. 收到消息时触发
-     */
-    @OnMessage
-    public void onMessage(String message, Session session) {
-        System.out.println("【原生 WebSocket】收到 " + myUserId + " 的消息：" + message);
-
-        // 解析前端发来的 JSON
-        JSONObject jsonObject = JSON.parseObject(message);
-        String toUserId = jsonObject.getString("to");
-        String content = jsonObject.getString("content");
-
-        // 尝试寻找接收人
-        Session targetSession = onlineUsers.get(toUserId);
-
-        // 持久化消息到数据库
+    private boolean valid(WebSocketSession ws) {
+        if (ws.getPrincipal() == null) return false;
         try {
-            ChatMessageService chatService = ChatMessageService.getInstance();
-            if (chatService != null) {
-                int rows = chatService.save(myUserId, toUserId, content);
-                System.out.println("【原生 WebSocket】消息已存库，影响行数：" + rows);
-            } else {
-                System.out.println("【原生 WebSocket】严重错误：ChatMessageService 静态引用为 null，Spring 可能未初始化！");
+            HttpSession http = (HttpSession) ws.getAttributes().get("httpSession");
+            if (http == null) return false;
+            SecurityContext context = (SecurityContext) http.getAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY);
+            return context != null && context.getAuthentication() != null && context.getAuthentication().isAuthenticated()
+                && ws.getPrincipal().getName().equals(context.getAuthentication().getName());
+        } catch (IllegalStateException ex) { return false; }
+    }
+    @Override public void handleTextMessage(WebSocketSession session, TextMessage payload) throws Exception {
+        if (!valid(session)) { session.close(CloseStatus.POLICY_VIOLATION); return; }
+        String clientId = null;
+        try {
+            if (payload.getPayloadLength() > 16384) throw new IllegalArgumentException("消息过大");
+            synchronized (session.getAttributes()) {
+                long now = System.currentTimeMillis();
+                long[] rate = (long[])session.getAttributes().get("rate");
+                if (rate == null || now - rate[0] >= 60000) { rate = new long[]{now,0}; session.getAttributes().put("rate",rate); }
+                if (++rate[1] > 60) throw new IllegalArgumentException("发送过于频繁，请稍后重试");
             }
-        } catch (Exception e) {
-            System.out.println("【原生 WebSocket】消息存库失败：");
-            e.printStackTrace();
-        }
-
-        if (targetSession != null && targetSession.isOpen()) {
-            // 对方在线，发送！
-            String sendJson = String.format("{\"from\":\"%s\", \"content\":\"%s\"}", myUserId, content);
-            try {
-                // 原生的发送消息语法
-                targetSession.getBasicRemote().sendText(sendJson);
-            } catch (IOException e) {
-                System.out.println("【原生 WebSocket】发送异常：" + e.getMessage());
+            JsonNode node = json.readTree(payload.getPayload());
+            if (node == null || !node.isObject()) throw new IllegalArgumentException("消息格式不正确");
+            clientId = node.path("clientId").asText();
+            String to = node.path("to").asText(), content = node.path("content").asText();
+            Map<String,Object> saved = messages.save(session.getPrincipal().getName(), to, content, clientId);
+            Map<String,Object> event = new LinkedHashMap<>(saved);
+            event.put("type", "message");
+            // All recipient connections are checked against their current HTTP login session.
+            for (WebSocketSession target : connections.values()) {
+                if (target.getPrincipal().getName().equals(to) && valid(target)) send(target, event);
             }
-        } else {
-            System.out.println("【原生 WebSocket】发送失败，目标用户 " + toUserId + " 处于离线状态。");
+            Map<String,Object> ack = new LinkedHashMap<>(saved); ack.put("type", "ack");
+            send(connections.get(session.getId()), ack); // save returned only after the DB commit
+        } catch (IllegalArgumentException | com.fasterxml.jackson.core.JsonProcessingException ex) {
+            error(session, clientId, "INVALID_MESSAGE", "消息无效或发送过于频繁");
+        } catch (Exception ex) {
+            LOG.log(Level.WARNING, "Message persistence failed", ex);
+            error(session, clientId, "SAVE_FAILED", "消息未确认保存，请重试");
         }
     }
-
-    /**
-     * 3. 连接断开时触发
-     */
-    /**
-     * 3. 连接断开时触发
-     * 【修复点】：给方法参数加上 Session session，用来对比身份
-     */
-    @OnClose
-    public void onClose(Session session) {
-        if (myUserId != null) {
-            // 【核心安全锁】：如果名单里 admin 对应的连接，确实是当前要断开的这个旧连接，才允许删除！
-            // 防止 F5 刷新时，旧连接把新连接的记录给误删了！
-            if (onlineUsers.get(myUserId) == session) {
-                onlineUsers.remove(myUserId);
-                System.out.println("【原生 WebSocket】用户彻底下线：" + myUserId + "，当前总人数：" + onlineUsers.size());
-            } else {
-                System.out.println("【原生 WebSocket】拦截了一次误删动作！用户 " + myUserId + " 已在别处重新连接。");
-            }
-        }
+    private void error(WebSocketSession session, String clientId, String code, String message) {
+        Map<String,Object> e = new LinkedHashMap<>(); e.put("type","error"); e.put("clientId",clientId); e.put("code",code); e.put("message",message);
+        send(connections.get(session.getId()), e);
     }
-
-    /**
-     * 4. 发生错误时触发
-     */
-    @OnError
-    public void onError(Session session, Throwable error) {
-        System.out.println("【原生 WebSocket】致命错误：" + error.getMessage());
+    private void send(WebSocketSession session, Object value) {
+        if (session == null || !session.isOpen()) return;
+        try { session.sendMessage(new TextMessage(json.writeValueAsString(value))); }
+        catch (Exception ex) { close(session); }
+    }
+    private void close(WebSocketSession session) {
+        connections.remove(session.getId(), session);
+        try { session.close(CloseStatus.POLICY_VIOLATION); } catch (IOException ignored) {}
+    }
+    @Override public void afterConnectionClosed(WebSocketSession session, CloseStatus status) { connections.remove(session.getId()); }
+    @Override public void handleTransportError(WebSocketSession session, Throwable error) { WebSocketSession wrapped=connections.get(session.getId()); if(wrapped!=null) close(wrapped); }
+    @EventListener public void sessionDestroyed(HttpSessionDestroyedEvent event) {
+        for (WebSocketSession ws : connections.values()) if (event.getId().equals(ws.getAttributes().get("httpSessionId"))) close(ws);
+    }
+    @Scheduled(fixedDelay=30000) public void expireConnections() {
+        for (WebSocketSession ws : connections.values()) if (!valid(ws)) close(ws);
     }
 }

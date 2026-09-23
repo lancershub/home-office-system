@@ -3,11 +3,12 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+<%@ include file="security.jspf" %>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>访客个人中心 - 居家办公通</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link href="${pageContext.request.contextPath}/lib/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/lib/bootstrap-icons/font/bootstrap-icons.css">
 
     <style>
         /* 布局样式控制 */
@@ -66,9 +67,10 @@
         </ul>
 
         <div class="px-4 mt-5">
-            <a href="logout.action" class="btn btn-outline-light w-100 btn-sm">
+            <form action="logout.action" method="post">
+<input type="hidden" name="${_csrf.parameterName}" value="<c:out value='${_csrf.token}'/>"><button type="submit" class="btn btn-outline-light w-100 btn-sm">
                 <i class="bi bi-box-arrow-right me-1"></i>退出系统
-            </a>
+            </button></form>
         </div>
     </nav>
 
@@ -88,7 +90,7 @@
 
                     <div class="card border-0 shadow-sm rounded-4 mb-4">
                         <div class="card-body p-4">
-                            <h4 class="fw-bold">${msg}</h4>
+                            <h4 class="fw-bold"><c:out value="${msg}"/></h4>
                             <p class="text-muted mb-0">今天是全新的一天，祝您办公愉快！</p>
                         </div>
                     </div>
@@ -101,6 +103,7 @@
                             <c:when test="${empty todayRecord}">
                                 <p class="text-muted fs-5 mb-4">您今天还没有打卡哦</p>
                                 <form action="clockIn" method="post">
+<input type="hidden" name="${_csrf.parameterName}" value="<c:out value='${_csrf.token}'/>">
                                     <button type="submit" class="btn btn-success btn-lg rounded-pill px-5 shadow py-3 fs-5">
                                         <i class="bi bi-box-arrow-in-right me-2"></i>上 班 打 卡
                                     </button>
@@ -114,6 +117,7 @@
                                 </div>
                                 <p class="text-warning fw-bold fs-5 mb-4">辛苦了！记得下班前打卡哦</p>
                                 <form action="clockOut" method="post">
+<input type="hidden" name="${_csrf.parameterName}" value="<c:out value='${_csrf.token}'/>">
                                     <button type="submit" class="btn btn-warning btn-lg rounded-pill px-5 shadow py-3 fs-5 text-dark">
                                         <i class="bi bi-box-arrow-right me-2"></i>下 班 打 卡
                                     </button>
@@ -148,8 +152,8 @@ $(document).ready(function() {
     checkReminders();
 });
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+<script src="${pageContext.request.contextPath}/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="${pageContext.request.contextPath}/lib/jquery/jquery.min.js"></script>
 
 <script>
     $(document).ready(function() {

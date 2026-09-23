@@ -3,11 +3,12 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+<%@ include file="security.jspf" %>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>考勤数据管理</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link href="${pageContext.request.contextPath}/lib/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/lib/bootstrap-icons/font/bootstrap-icons.css">
 </head>
 <body>
 
@@ -35,7 +36,7 @@
                 <c:forEach items="${records}" var="r">
                     <tr>
                         <th scope="row">${r.id}</th>
-                        <td class="fw-bold">${r.user_name}</td>
+                        <td class="fw-bold"><c:out value="${r.user_name}"/></td>
                         <td class="text-primary">${r.work_date}</td>
 
                         <td>
@@ -63,7 +64,7 @@
                         <td>
                             <c:choose>
                                 <c:when test="${not empty r.clock_in_time and not empty r.clock_out_time}">
-                                    <span class="badge bg-success">全勤</span>
+                                    <span class="badge bg-success">上下班均已打卡</span>
                                 </c:when>
                                 <c:otherwise>
                                     <span class="badge bg-secondary">状态待定</span>
@@ -85,6 +86,6 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-</body>
+<script src="${pageContext.request.contextPath}/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
+<div class="m-3"><c:if test="${page > 1}"><a href="?page=${page-1}">上一页</a></c:if> <span>第 <c:out value="${page}"/> 页</span> <c:if test="${records.size() == 100}"><a href="?page=${page+1}">下一页</a></c:if></div></body>
 </html>

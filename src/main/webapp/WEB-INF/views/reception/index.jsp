@@ -2,11 +2,12 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+<%@ include file="security.jspf" %>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>居家办公通系统 - 门户</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link href="${pageContext.request.contextPath}/lib/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/lib/bootstrap-icons/font/bootstrap-icons.css">
     <style>
         body {
             background-color: #f4f6f9;
@@ -54,11 +55,10 @@
 
         <div class="tab-pane fade show active" id="login-pane" role="tabpanel">
 
-            <% if(request.getAttribute("loginError") != null) { %>
-                <div class="alert alert-danger py-2"><i class="bi bi-exclamation-circle me-2"></i><%=request.getAttribute("loginError")%></div>
-            <% } %>
+            <c:if test="${param.error eq 'true'}"><div class="alert alert-danger">账号或密码错误</div></c:if>
 
             <form action="login" method="post">
+<input type="hidden" name="${_csrf.parameterName}" value="<c:out value='${_csrf.token}'/>">
                 <div class="mb-3">
                     <label class="form-label text-muted small">登录账号 <span class="badge bg-primary ms-1">管理员 / 访客</span></label>
                     <div class="input-group">
@@ -70,7 +70,7 @@
                     <label class="form-label text-muted small">登录密码</label>
                     <div class="input-group">
                         <span class="input-group-text bg-light"><i class="bi bi-lock"></i></span>
-                        <input type="password" class="form-control" name="password" placeholder="请输入密码" required>
+                        <input type="password" class="form-control" name="password" minlength="12" placeholder="请输入密码" required>
                     </div>
                 </div>
                 <button type="submit" class="btn btn-primary w-100 py-2 fw-bold"><i class="bi bi-box-arrow-in-right me-2"></i>登 录 系 统</button>
@@ -84,13 +84,14 @@
                     <i class="bi bi-check-circle-fill fs-4 text-success d-block mb-2"></i>
                     <h5 class="alert-heading fw-bold">注册成功！</h5>
                     <p class="mb-1">您的专属登录 ID 是：</p>
-                    <h2 class="text-danger fw-bold my-2"><%=request.getParameter("newId")%></h2>
+                    <h2 class="text-danger fw-bold my-2"><c:out value="${param.newId}"/></h2>
                     <hr>
                     <p class="mb-0 small text-muted">请牢记您的 ID，稍后请切换到"系统登录"标签页进行登录。</p>
                 </div>
             <% } %>
 
             <form action="register" method="post">
+<input type="hidden" name="${_csrf.parameterName}" value="<c:out value='${_csrf.token}'/>">
                 <div class="mb-3">
                     <input type="text" class="form-control" name="visitorName" placeholder="访客姓名 (必填)" required>
                 </div>
@@ -98,7 +99,7 @@
                     <input type="text" class="form-control" name="phone" placeholder="联系电话 (必填)" required>
                 </div>
                 <div class="mb-3">
-                    <input type="password" class="form-control border-primary" name="password" placeholder="请设置登录密码 (必填)" required>
+                    <input type="password" class="form-control border-primary" name="password" minlength="12" placeholder="请设置登录密码 (必填)" required>
                 </div>
                 <div class="mb-4">
                     <textarea class="form-control" name="purpose" rows="2" placeholder="来访目的 (选填)"></textarea>
@@ -110,6 +111,6 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="${pageContext.request.contextPath}/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

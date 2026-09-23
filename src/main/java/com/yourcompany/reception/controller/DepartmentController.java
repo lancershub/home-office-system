@@ -6,10 +6,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import javax.servlet.http.HttpSession;
 import java.util.List;
-import com.alibaba.fastjson.JSON;
+import com.yourcompany.reception.util.Json;
 
 @Controller
 @RequestMapping("/dept")
@@ -19,7 +21,7 @@ public class DepartmentController {
     private DepartmentService departmentService;
 
     // 1. 页面跳转：返回部门管理页面
-    @RequestMapping("/view")
+    @GetMapping("/view")
     public String viewPage(HttpSession session, Model model) {
         if (session.getAttribute("adminUser") == null) {
             return "redirect:/hello";
@@ -29,18 +31,18 @@ public class DepartmentController {
     }
 
     // 2. 获取数据：返回给前端的 JSON 列表
-    @RequestMapping(value = "/list", produces = "application/json;charset=utf-8")
+    @GetMapping(value = "/list", produces = "application/json;charset=utf-8")
     @ResponseBody
     public String getList(HttpSession session) {
         if (session.getAttribute("adminUser") == null) {
             return "[]";
         }
         List<Department> depts = departmentService.getAllDepartments();
-        return JSON.toJSONString(depts);
+        return Json.encode(depts);
     }
 
     // 3. 保存或更新部门
-    @RequestMapping("/save")
+    @PostMapping("/save")
     @ResponseBody
     public String save(Department department, HttpSession session) {
         if (session.getAttribute("adminUser") == null) return "error";
@@ -49,7 +51,7 @@ public class DepartmentController {
     }
 
     // 4. 删除部门
-    @RequestMapping("/delete")
+    @PostMapping("/delete")
     @ResponseBody
     public String delete(Integer id, HttpSession session) {
         if (session.getAttribute("adminUser") == null) return "error";

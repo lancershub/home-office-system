@@ -1,0 +1,9 @@
+# Copy to office-local.properties in the project root for local development.
+# The local file is ignored by Git and is not packaged in the WAR.
+# Spring gives environment variables and Java system properties higher priority.
+# Loopback development only. For remote/production databases use verified TLS instead.
+OFFICE_DB_URL=jdbc:mysql://localhost:3306/reception_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+OFFICE_DB_USER=your_database_user
+OFFICE_DB_PASSWORD=your_database_password
+# Use forward slashes in Windows paths. This directory must not be a web root.
+OFFICE_UPLOAD_DIR=D:/office-data/files

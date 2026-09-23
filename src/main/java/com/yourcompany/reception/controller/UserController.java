@@ -6,8 +6,10 @@ import com.yourcompany.reception.entity.ChatMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
-import com.alibaba.fastjson.JSON;
+import com.yourcompany.reception.util.Json;
 
 import javax.servlet.http.HttpSession;
 import java.util.List;
@@ -26,7 +28,7 @@ public class UserController {
     /**
      * 1. 页面跳转：返回人员调配看板页面
      */
-    @RequestMapping("/assignPage")
+    @GetMapping("/assignPage")
     public String assignPage(HttpSession session) {
         // 【关键修复】：人员调配是管理员特权，必须检查 adminUser
         if (session.getAttribute("adminUser") == null) {
@@ -38,10 +40,9 @@ public class UserController {
     /**
      * 2. 获取数据：返回所有注册员工的列表
      */
-    @RequestMapping(value = "/list", produces = "application/json;charset=utf-8")
+    @GetMapping(value = "/list", produces = "application/json;charset=utf-8")
     @ResponseBody
     public String getUserList(HttpSession session) {
-        System.out.println("==== 开始执行核武器级 JSON 转换 ====");
 
         if (session.getAttribute("adminUser") == null) {
             return "[]"; // 没登录就返回空数组字符串
@@ -51,20 +52,18 @@ public class UserController {
         List<Map<String, Object>> list = visitorService.getAllVisitorsWithDept();
 
         // 2. 强行手动翻译！把 Java 集合变成 JSON 字符串
-        String jsonResult = JSON.toJSONString(list);
+        String jsonResult = Json.encode(list);
 
         // 3. 在控制台打印出来看看长什么样
-        System.out.println("转换后的超级JSON：" + jsonResult);
 
         // 4. 直接把这段纯文本丢给前端！
         return jsonResult;
     }
     // 进入在线聊天室
-    @RequestMapping("/chatPage")
+    @GetMapping("/chatPage")
     public String chatPage(javax.servlet.http.HttpSession session) {
         // 门卫检查：强制必须登录后才能进聊天室！
         if (session.getAttribute("adminUser") == null && session.getAttribute("visitorId") == null) {
-            System.out.println("【拦截】未登录用户试图进入聊天室，已踢回首页！");
             return "redirect:/hello"; // 这里的 /hello 请改成你实际的登录页路径
         }
         return "chat_test"; // 跳转到 WEB-INF/views/.../chat_test.jsp
@@ -75,9 +74,9 @@ public class UserController {
     /**
      * 4. 获取聊天历史记录
      */
-    @RequestMapping(value = "/chatHistory", produces = "application/json;charset=utf-8")
+    @GetMapping(value = "/chatHistory", produces = "application/json;charset=utf-8")
     @ResponseBody
-    public String chatHistory(String withUserId, HttpSession session) {
+    public String chatHistory(String withUserId, Integer beforeId, HttpSession session) {
         String myUserId = null;
         if (session.getAttribute("adminUser") != null) {
             myUserId = "admin";
@@ -87,22 +86,17 @@ public class UserController {
         if (myUserId == null || withUserId == null) {
             return "[]";
         }
-        List<ChatMessage> list = chatMessageService.getHistory(myUserId, withUserId);
-        return JSON.toJSONString(list);
+        List<ChatMessage> list = chatMessageService.getHistory(myUserId, withUserId, beforeId);
+        return Json.encode(list);
     }
 
-    @RequestMapping("/assignDept")
+    @PostMapping("/assignDept")
     @ResponseBody
     public String assignDept(Integer userId, Integer deptId, HttpSession session) {
         // 【关键修复】：只有管理员才能改别人的部门
         if (session.getAttribute("adminUser") == null) return "error";
 
-        try {
-            boolean success = visitorService.updateEmployeeDept(userId, deptId);
-            return success ? "success" : "fail";
-        } catch (Exception e) {
-            e.printStackTrace();
-            return "fail";
-        }
+        boolean success = visitorService.updateEmployeeDept(userId, deptId);
+        return success ? "success" : "fail";
     }
 }
